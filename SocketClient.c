@@ -11,7 +11,18 @@
 #include <arpa/inet.h>
 #endif
 
-int main() {
+int main(int argc, char **argv) {
+    // set IP & port
+    char serverIP[15] = "127.0.0.1";
+    int serverPort = 4567;
+
+    if(argc == 3) {
+        strcpy(serverIP, argv[1]);
+        serverPort = atoi(argv[2]);
+    }
+    printf("Server IP   : %s\n", serverIP);
+    printf("Server Port : %d\n\n", serverPort);
+
     //Winsows啟用socket
     #ifdef _WIN32
     WSADATA wsadata;
@@ -33,8 +44,8 @@ int main() {
     memset(&serverAddr, 0, sizeof(serverAddr));
 
     serverAddr.sin_family = AF_INET;
-    serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    serverAddr.sin_port = htons(4567);
+    serverAddr.sin_addr.s_addr = inet_addr(serverIP);
+    serverAddr.sin_port = htons(serverPort);
     
     int err = connect(sockfd,(struct sockaddr *)&serverAddr,sizeof(serverAddr));
     if(err == -1) {

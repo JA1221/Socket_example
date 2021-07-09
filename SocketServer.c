@@ -11,7 +11,14 @@
 #include <arpa/inet.h>
 #endif
 
-int main(){
+int main(int argc, char **argv){
+    // set port
+    int serverPort = 4567;
+    if(argc == 2)
+        serverPort = atoi(argv[1]);
+    printf("Listening Ports : %d\n\n", serverPort);
+
+
     //Winsows啟用socket
     #ifdef _WIN32
     WSADATA wsadata;
@@ -35,7 +42,7 @@ int main(){
 
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    serverAddr.sin_port = htons(4567);
+    serverAddr.sin_port = htons(serverPort);
 
     int err = bind(sockfd, (struct sockaddr *)&serverAddr, sizeof(serverAddr));
     if(err == -1) {
