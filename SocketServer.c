@@ -1,22 +1,37 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-// #include <sys/socket.h>
-// #include <netinet/in.h>
-#include <arpa/inet.h>
 
+#ifdef _WIN32 // windows (-l wsock32)
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#else // Linux
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#endif
 
 int main(){
+    //Winsows啟用socket
+    #ifdef _WIN32
+    WSADATA wsadata;
+    if(WSAStartup(MAKEWORD(2,2), &wsadata) == SOCKET_ERROR) {
+        printf("WSAStartup() fail\n");
+        exit(1);
+    }
+    #endif
+
+
     // 建立socket
 	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd == -1) {
 		printf("Fail to create a socket.\n");
-		return -1;
+		exit(1);
 	}
 
     // socket 綁定
 	struct sockaddr_in clientAddr, serverAddr;
-	bzero(&serverAddr, sizeof(serverAddr));
+	memset(&serverAddr, 0, sizeof(serverAddr));
 
 	serverAddr.sin_family = AF_INET;
 	serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -25,7 +40,7 @@ int main(){
     int err = bind(sockfd, (struct sockaddr *)&serverAddr, sizeof(serverAddr));
 	if(err == -1) {
         printf("Bind failed.\n");
-        return -1;
+        exit(1);
     }
 
     // 監聽連線
@@ -40,9 +55,9 @@ int main(){
 		int connfd = accept(sockfd, (struct sockaddr *) &clientAddr, &addrlen);
         if(connfd == -1) {
             printf("Accept failed.\n");
-            return -1;
+            exit(1);
         }
-        // char *client_ip = inet_ntoa(clientAddr.sin_addr);
+
         char *client_ip = inet_ntoa(clientAddr.sin_addr);
         int client_port = ntohs(clientAddr.sin_port);
         printf("Connect form:%s Port:%d\n", client_ip, client_port);
@@ -53,7 +68,14 @@ int main(){
         }
 		
         printf("Socket closed.\n");
+
+        // close socket
+        #ifdef _WIN32
+        closesocket(connfd);
+        #else
         close(connfd);
+        #endif
 	}
+
 	return 0;
 }
