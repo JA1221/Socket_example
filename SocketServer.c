@@ -23,36 +23,36 @@ int main(){
 
 
     // 建立socket
-	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-	if (sockfd == -1) {
-		printf("Fail to create a socket.\n");
-		exit(1);
-	}
+    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd == -1) {
+        printf("Fail to create a socket.\n");
+        exit(1);
+    }
 
     // socket 綁定
-	struct sockaddr_in clientAddr, serverAddr;
-	memset(&serverAddr, 0, sizeof(serverAddr));
+    struct sockaddr_in clientAddr, serverAddr;
+    memset(&serverAddr, 0, sizeof(serverAddr));
 
-	serverAddr.sin_family = AF_INET;
-	serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	serverAddr.sin_port = htons(4567);
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    serverAddr.sin_port = htons(4567);
 
     int err = bind(sockfd, (struct sockaddr *)&serverAddr, sizeof(serverAddr));
-	if(err == -1) {
+    if(err == -1) {
         printf("Bind failed.\n");
         exit(1);
     }
 
     // 監聽連線
-	listen(sockfd, 3);
+    listen(sockfd, 3);
     printf("Listening...\n");
 
-	socklen_t addrlen = sizeof(clientAddr);
+    socklen_t addrlen = sizeof(clientAddr);
     char buffer[1024] = "Server have received your data.";
-	char receiveMsg[1024];
+    char receiveMsg[1024];
 
-	while(1){  // receive data
-		int connfd = accept(sockfd, (struct sockaddr *) &clientAddr, &addrlen);
+    while(1){  // receive data
+        int connfd = accept(sockfd, (struct sockaddr *) &clientAddr, &addrlen);
         if(connfd == -1) {
             printf("Accept failed.\n");
             exit(1);
@@ -66,7 +66,7 @@ int main(){
             printf("Received data: %s \n", receiveMsg);
             // send(connfd, buffer, strlen(buffer)+1, 0);
         }
-		
+        
         printf("Socket closed.\n");
 
         // close socket
@@ -75,7 +75,7 @@ int main(){
         #else
         close(connfd);
         #endif
-	}
+    }
 
-	return 0;
+    return 0;
 }
