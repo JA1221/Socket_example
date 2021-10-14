@@ -11,6 +11,9 @@
 #include <arpa/inet.h>
 #endif
 
+#define MAX_FILE_PATH_SIZE 512
+#define MAX_BUFFER_SIZE 20000
+
 int main(int argc, char **argv){
     // set port
     int serverPort = 4567;
@@ -53,12 +56,18 @@ int main(int argc, char **argv){
     // 監聽連線
     listen(sockfd, 3);
     printf("Listening...\n");
-
     socklen_t addrlen = sizeof(clientAddr);
-    char buffer[1024] = "Server have received your data.";
-    char receiveMsg[1024];
 
-    while(1){  // receive data
+    // open image file
+    char file_path[MAX_FILE_PATH_SIZE] = "C:\\Users\\robin\\Desktop\\Image\\image.png";
+    char buffer[MAX_BUFFER_SIZE];
+    FILE *fp = fopen(file_path, "rb");
+    if(fp == NULL){
+        printf("Image file %s not found", file_path);
+        exit(1);
+    }
+    
+    while(1){ 
         int connfd = accept(sockfd, (struct sockaddr *) &clientAddr, &addrlen);
         if(connfd == -1) {
             printf("Accept failed.\n");
@@ -69,11 +78,18 @@ int main(int argc, char **argv){
         int client_port = ntohs(clientAddr.sin_port);
         printf("Connect form:%s Port:%d\n", client_ip, client_port);
         
-        while(recv(connfd, receiveMsg, 1024, 0) > 0){
-            printf("Received data: %s \n", receiveMsg);
-            // send(connfd, buffer, strlen(buffer)+1, 0);
+        // send image
+        int len = 0;
+
+        while ((len = fread(buffer, sizeof(char), MAX_BUFFER_SIZE, fp)) > 0) {
+            printf("read len: %d\n", len);
+            if (send(connfd, buffer, len, 0) < 0) { 
+                printf("Send Image File: %s Failed\n", file_path);
+                break;
+            }
+                memset(buffer, 0, MAX_BUFFER_SIZE); 
         }
-        
+
         printf("Socket closed.\n");
 
         // close socket
@@ -83,6 +99,7 @@ int main(int argc, char **argv){
         close(connfd);
         #endif
     }
+    fclose(fp);
 
     return 0;
 }

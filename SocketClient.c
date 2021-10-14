@@ -11,6 +11,9 @@
 #include <arpa/inet.h>
 #endif
 
+#define MAX_FILE_PATH_SIZE 512
+#define MAX_BUFFER_SIZE 20000
+
 int main(int argc, char **argv) {
     // set IP & port
     char serverIP[15] = "127.0.0.1";
@@ -53,18 +56,26 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    // Send a message to server
-    char buffer[1024];
-    char receiveMsg[1024];
+    // recv image
+    char file_path[MAX_FILE_PATH_SIZE] = "C:\\Users\\robin\\Desktop\\Image\\recv_image.png";
+    char buffer[MAX_BUFFER_SIZE];
+    memset(buffer, 0, MAX_BUFFER_SIZE);
+    FILE *fp = fopen(file_path, "wb");
+    int len = 0;
 
-    while(strcmp(buffer, "q\n")) {
-        printf("Send to server:");
-        fgets(buffer, 1024, stdin);
+    while ((len = recv(sockfd, buffer, MAX_BUFFER_SIZE, 0)) > 0) {
+        printf("revc len: %d\n", len);
 
-        send(sockfd, buffer, strlen(buffer)+1, 0);
-        // recv(sockfd, receiveMsg, sizeof(receiveMsg), 0);
-        // printf("Received data: %s \n", receiveMsg);
+        if(fwrite(buffer, sizeof(char), len, fp) < len) {
+            printf("Image File: %s Write Failed\n", file_path);
+            break; 
+        }
+        else
+            memset(buffer, 0, MAX_BUFFER_SIZE);
     }
+    fclose(fp);
+
+
     printf("close Socket\n");
     
     // close socket
