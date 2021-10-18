@@ -89,6 +89,8 @@ int main(int argc, char **argv){
             }
                 memset(buffer, 0, MAX_BUFFER_SIZE); 
         }
+        // seek back to beginning of file
+        fseek(fp, 0, SEEK_SET);
 
         printf("Socket closed.\n");
 
