@@ -11,7 +11,155 @@
 #include <arpa/inet.h>
 #endif
 
+typedef struct {
+    char exeName[40];
+    char exePath[80];
+    int run;
+} APP_Info;
+
+typedef struct {
+    APP_Info list[10];
+	int list_cnt;
+} Update_Information;
+
+int bindSocket(int sockfd, char *addr, int port) {
+    struct sockaddr_in serverAddr;
+    memset(&serverAddr, 0, sizeof(serverAddr));
+
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_addr.s_addr = inet_addr(addr);
+    serverAddr.sin_port = htons(port);
+    
+    int err = bind(sockfd, (struct sockaddr *)&serverAddr, sizeof(serverAddr));
+
+    return err;
+}
+
+int acceptSocket(int sockfd) {
+    struct sockaddr_in clientAddr;
+    socklen_t addrlen = sizeof(clientAddr);
+    int err = accept(sockfd, (struct sockaddr *) &clientAddr, &addrlen);
+
+    if(err != -1){
+        char *client_ip = inet_ntoa(clientAddr.sin_addr);
+        int client_port = ntohs(clientAddr.sin_port);
+        printf("[+]Connect form:%s Port:%d\n", client_ip, client_port);
+    }
+
+    return err;
+}
+
+void closeSocket(int sockfd) {
+    printf("[-]Socket closed.\n");
+    // close socket
+    #ifdef _WIN32
+    closesocket(sockfd);
+    #else
+    close(sockfd);
+    #endif
+}
+
+int sendFile(int sockfd, FILE *fp) {
+    char buffer[1024];
+    int len;
+
+    while ((len = fread(buffer, sizeof(char), sizeof(buffer), fp)) > 0) {
+        if (send(sockfd, buffer, len, 0) < 0) { 
+            printf("Send File Failed\n");
+            return -1;
+        }
+        memset(buffer, 0, sizeof(buffer)); 
+    }
+
+    return 0;
+}
+
+void read_UI_file(Update_Information *ui) {
+    const char* filename = ".\\app\\list.txt";
+    char contents[1024];
+    FILE* fp = fopen(filename, "r");
+
+    if (!fp) {
+        printf("List not found!!\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // list count
+    fscanf(fp, "%s", contents);
+    int count = atoi(contents);
+    ui->list_cnt = count;
+
+    for(int i = 0; i < count; i++) {
+        
+        fscanf(fp, "%s", contents);
+        strcpy(ui->list[i].exeName, contents);
+        
+        fscanf(fp, "%s", contents);
+        strcpy(ui->list[i].exePath, contents);
+        
+        fscanf(fp, "%s", contents);
+        ui->list[i].run = atoi(contents);
+    }
+
+    fclose(fp);
+}
+
+int uploadList(int connfd, Update_Information *ui) {
+    char receiveMsg[128];
+
+    // send list
+    int sendNum = send(connfd, (void*)ui, sizeof(*ui), 0);
+    printf("Send %d Bytes\n", sendNum);
+    recv(connfd, receiveMsg, sizeof(receiveMsg), 0);
+    printf("Client recv update list: %s\n\n", receiveMsg);
+
+    return (sendNum > 0) ? 0 : -1;
+}
+
+void uploadAPP(int sockfd, Update_Information *ui, char *appFolder) {
+    char error[] = "Error";
+    char success[] = "Success";
+    char buf[128];
+
+    printf("Update...\n");
+
+    int count = ui->list_cnt;
+    for(int i = 0; i < count; i++) {
+        // connect Client
+        int connfd = acceptSocket(sockfd);
+        
+        char path[256] = "";
+        strcat(path, appFolder);
+        strcat(path, ui->list[i].exeName);
+
+        FILE *fp = fopen(path, "rb");
+        if(fp == NULL){
+            printf("File[%d] open failed!\n", i+1);
+            continue;
+        }
+
+        if(sendFile(connfd, fp) == -1){
+            printf("   Send APP[%d]: ERROR.\n", i+1);
+            send(connfd, error, sizeof(error) + 1, 0);
+        }
+        else{
+            printf("   Send APP[%d]: Success.\n", i+1);
+            send(connfd, success, sizeof(success) + 1, 0);
+        }
+        fclose(fp);
+
+        closeSocket(connfd);
+        if(i < count-1)
+            printf("\n");
+    }
+
+    printf("End of update.\n\n");
+}
+
 int main(int argc, char **argv){
+    char buffer[1024] = "Server have received your data.";
+    char receiveMsg[1024];
+
     // set port
     int serverPort = 4567;
     if(argc == 2)
@@ -28,61 +176,37 @@ int main(int argc, char **argv){
     }
     #endif
 
-
-    // 建立socket
+    // create socket
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd == -1) {
         printf("Fail to create a socket.\n");
         exit(1);
     }
 
-    // socket 綁定
-    struct sockaddr_in clientAddr, serverAddr;
-    memset(&serverAddr, 0, sizeof(serverAddr));
-
-    serverAddr.sin_family = AF_INET;
-    serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    serverAddr.sin_port = htons(serverPort);
-
-    int err = bind(sockfd, (struct sockaddr *)&serverAddr, sizeof(serverAddr));
+    // bind
+    int err = bindSocket(sockfd, "127.0.0.1", serverPort);
     if(err == -1) {
         printf("Bind failed.\n");
         exit(1);
     }
 
-    // 監聽連線
+    // list
     listen(sockfd, 3);
     printf("Listening...\n");
 
-    socklen_t addrlen = sizeof(clientAddr);
-    char buffer[1024] = "Server have received your data.";
-    char receiveMsg[1024];
+    // accept Client connection
+    int connfd = acceptSocket(sockfd);
+    
+    // send list to client
+    Update_Information ui;
+    read_UI_file(&ui);
+    uploadList(connfd, &ui);
+    
+    // upload APPs
+    uploadAPP(sockfd, &ui, ".\\app\\");
 
-    while(1){  // receive data
-        int connfd = accept(sockfd, (struct sockaddr *) &clientAddr, &addrlen);
-        if(connfd == -1) {
-            printf("Accept failed.\n");
-            exit(1);
-        }
-
-        char *client_ip = inet_ntoa(clientAddr.sin_addr);
-        int client_port = ntohs(clientAddr.sin_port);
-        printf("Connect form:%s Port:%d\n", client_ip, client_port);
-        
-        while(recv(connfd, receiveMsg, 1024, 0) > 0){
-            printf("Received data: %s \n", receiveMsg);
-            // send(connfd, buffer, strlen(buffer)+1, 0);
-        }
-        
-        printf("Socket closed.\n");
-
-        // close socket
-        #ifdef _WIN32
-        closesocket(connfd);
-        #else
-        close(connfd);
-        #endif
-    }
+    // close socket
+    closeSocket(connfd);
 
     return 0;
 }

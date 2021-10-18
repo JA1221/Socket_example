@@ -1,0 +1,13 @@
+3
+
+image.png
+.\\recv_app\\
+1
+
+image2.png
+.\\recv_app\\
+0
+
+image3.png
+.\\recv_app\\
+1
