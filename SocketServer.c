@@ -117,8 +117,6 @@ int uploadList(int connfd, Update_Information *ui) {
 }
 
 void uploadAPP(int sockfd, Update_Information *ui, char *appFolder) {
-    char error[] = "Error";
-    char success[] = "Success";
     char buf[128];
 
     printf("Update...\n");
@@ -138,14 +136,11 @@ void uploadAPP(int sockfd, Update_Information *ui, char *appFolder) {
             continue;
         }
 
-        if(sendFile(connfd, fp) == -1){
+        if(sendFile(connfd, fp) == -1)
             printf("   Send APP[%d]: ERROR.\n", i+1);
-            send(connfd, error, sizeof(error) + 1, 0);
-        }
-        else{
+        else
             printf("   Send APP[%d]: Success.\n", i+1);
-            send(connfd, success, sizeof(success) + 1, 0);
-        }
+
         fclose(fp);
 
         closeSocket(connfd);

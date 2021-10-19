@@ -76,9 +76,6 @@ int recvFile(int sockfd, FILE *fp) {
 }
 
 int updateAPP(char *addr, int port, Update_Information *ui) {
-    char error[] = "Error";
-    char success[] = "Success";
-
     printf("Update...\n");
 
     int count = ui->list_cnt;
@@ -101,14 +98,10 @@ int updateAPP(char *addr, int port, Update_Information *ui) {
         FILE *fp = fopen(path, "wb");
         
         // download APP
-        if(recvFile(sockfd, fp) == -1){
+        if(recvFile(sockfd, fp) == -1)
             printf("   Recv: Error\n", i+1);
-            send(sockfd, error, sizeof(error) + 1, 0);
-        }
-        else{
+        else
             printf("   Recv: Success\n", i+1);
-            send(sockfd, success, sizeof(success) + 1, 0);
-        }
         
         fclose(fp);
         
