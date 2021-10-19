@@ -11,6 +11,9 @@
 #include <arpa/inet.h>
 #endif
 
+#define APP_LIST_FOLDER ".\\app\\list.txt"
+#define APP_FOLDER ".\\app\\"
+
 typedef struct {
     char exeName[40];
     char exePath[80];
@@ -75,9 +78,8 @@ int sendFile(int sockfd, FILE *fp) {
 }
 
 void read_UI_file(Update_Information *ui) {
-    const char* filename = ".\\app\\list.txt";
     char contents[1024];
-    FILE* fp = fopen(filename, "r");
+    FILE* fp = fopen(APP_LIST_FOLDER, "r");
 
     if (!fp) {
         printf("List not found!!\n");
@@ -198,8 +200,7 @@ int main(int argc, char **argv){
     uploadList(connfd, &ui);
     
     // upload APPs
-    uploadAPP(sockfd, &ui, ".\\app\\");
-
+    uploadAPP(sockfd, &ui, APP_FOLDER);
     // close socket
     closeSocket(connfd);
 
