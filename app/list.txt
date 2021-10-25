@@ -1,13 +1,9 @@
-3
+2
 
-image.png
-.\\recv_app\\
-1
-
-image2.png
-.\\recv_app\\
+3a6e4b66-95f7-44e6-b7c3-d5e23251031c.ta
+/lib/optee_armtz/
 0
 
-image3.png
-.\\recv_app\\
+optee_example_hello_world
+/usr/bin/
 1

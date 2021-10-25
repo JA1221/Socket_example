@@ -11,7 +11,7 @@
 #include <arpa/inet.h>
 #endif
 
-#define APP_LIST_FOLDER ".\\app\\list.txt"
+#define APP_LIST_FOLDER ".\\app\\list2.txt"
 #define APP_FOLDER ".\\app\\"
 
 typedef struct {
@@ -106,13 +106,13 @@ void read_UI_file(Update_Information *ui) {
     fclose(fp);
 }
 
-int uploadList(int connfd, Update_Information *ui) {
+int uploadList(int sockfd, Update_Information *ui) {
     char receiveMsg[128];
 
     // send list
-    int sendNum = send(connfd, (void*)ui, sizeof(*ui), 0);
+    int sendNum = send(sockfd, (void*)ui, sizeof(*ui), 0);
     printf("Send %d Bytes\n", sendNum);
-    recv(connfd, receiveMsg, sizeof(receiveMsg), 0);
+    recv(sockfd, receiveMsg, sizeof(receiveMsg), 0);
     printf("Client recv update list: %s\n\n", receiveMsg);
 
     return (sendNum > 0) ? 0 : -1;
@@ -121,7 +121,7 @@ int uploadList(int connfd, Update_Information *ui) {
 void uploadAPP(int sockfd, Update_Information *ui, char *appFolder) {
     char buf[128];
 
-    printf("Update...\n");
+    printf("< Update... >\n");
 
     int count = ui->list_cnt;
     for(int i = 0; i < count; i++) {
@@ -135,6 +135,7 @@ void uploadAPP(int sockfd, Update_Information *ui, char *appFolder) {
         FILE *fp = fopen(path, "rb");
         if(fp == NULL){
             printf("File[%d] open failed!\n", i+1);
+            closeSocket(connfd);
             continue;
         }
 
@@ -181,7 +182,7 @@ int main(int argc, char **argv){
     }
 
     // bind
-    int err = bindSocket(sockfd, "127.0.0.1", serverPort);
+    int err = bindSocket(sockfd, "0.0.0.0", serverPort);
     if(err == -1) {
         printf("Bind failed.\n");
         exit(1);
@@ -191,18 +192,21 @@ int main(int argc, char **argv){
     listen(sockfd, 3);
     printf("Listening...\n");
 
-    // accept Client connection
-    int connfd = acceptSocket(sockfd);
-    
-    // send list to client
-    Update_Information ui;
-    read_UI_file(&ui);
-    uploadList(connfd, &ui);
-    
-    // upload APPs
-    uploadAPP(sockfd, &ui, APP_FOLDER);
-    // close socket
-    closeSocket(connfd);
+    while (1)
+    {
+        // accept Client connection
+        int connfd = acceptSocket(sockfd);
+        
+        // send list to client
+        Update_Information ui;
+        read_UI_file(&ui);
+        uploadList(connfd, &ui);
+        
+        // upload APPs
+        uploadAPP(sockfd, &ui, APP_FOLDER);
+        // close socket
+        closeSocket(connfd);
+    }
 
     return 0;
 }
