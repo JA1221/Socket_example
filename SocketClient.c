@@ -143,6 +143,8 @@ int updateAPP(char *addr, int port, Update_Information *ui) {
 
             // exe
             if(ui->list[i].run) {
+                if(ui->list[i].run == 2)
+                    sprintf(cmd, "%s &", exePath);
                 system(exePath);
             }
         }
@@ -164,7 +166,7 @@ void printTime() {
 
 int main(int argc, char **argv) {
     // set IP & port
-    char serverIP[15] = "127.0.0.1";
+    char serverIP[15] = "140.115.52.115";
     int serverPort = 4567;
 
     if(argc == 3) {

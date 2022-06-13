@@ -11,7 +11,7 @@
 #include <arpa/inet.h>
 #endif
 
-#define APP_LIST_FOLDER ".\\app\\list2.txt"
+#define APP_LIST_FOLDER ".\\app\\list.txt"
 #define APP_FOLDER ".\\app\\"
 
 typedef struct {
