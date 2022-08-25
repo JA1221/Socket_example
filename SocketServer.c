@@ -11,8 +11,9 @@
 #include <arpa/inet.h>
 #endif
 
-#define MAX_FILE_PATH_SIZE 512
-#define MAX_BUFFER_SIZE 20000
+#define MAX_FILE_PATH_SIZE 128
+// #define MAX_BUFFER_SIZE 20000
+#define MAX_BUFFER_SIZE (1 << 16)
 
 int main(int argc, char **argv){
     // set port
@@ -58,12 +59,29 @@ int main(int argc, char **argv){
     printf("Listening...\n");
     socklen_t addrlen = sizeof(clientAddr);
 
-    // open image file
-    char file_path[MAX_FILE_PATH_SIZE] = "C:\\Users\\robin\\Desktop\\Image\\image.png";
+    // open BS file
+
+    const char bs_files[][MAX_FILE_PATH_SIZE] = {"LED.bit",
+                                                "LED.bit.bin",
+                                                "LED_v2.bit",
+                                                "LED_v2.bit.bin"};
+    const int files_num = sizeof(bs_files) / sizeof(bs_files[0]);
+
     char buffer[MAX_BUFFER_SIZE];
-    FILE *fp = fopen(file_path, "rb");
+    char recv_buffer[MAX_BUFFER_SIZE];
+
+    int file_index;
+    for(int i = 0; i < files_num; i++){
+        printf("%d) %s\n", i, bs_files[i]);
+    }
+
+    printf("Select file:");
+    scanf("%d", &file_index);
+
+    FILE *fp = fopen(bs_files[file_index], "rb");
+
     if(fp == NULL){
-        printf("Image file %s not found", file_path);
+        printf("Image file %s not found", bs_files[file_index]);
         exit(1);
     }
     
@@ -80,14 +98,17 @@ int main(int argc, char **argv){
         
         // send image
         int len = 0;
+        int sum = 0;
 
         while ((len = fread(buffer, sizeof(char), MAX_BUFFER_SIZE, fp)) > 0) {
             printf("read len: %d\n", len);
+            sum += len;
             if (send(connfd, buffer, len, 0) < 0) { 
-                printf("Send Image File: %s Failed\n", file_path);
+                printf("Send Image File: %s Failed\n", bs_files[file_index]);
                 break;
             }
-                memset(buffer, 0, MAX_BUFFER_SIZE); 
+            printf("sum: %d\n", sum);
+            memset(buffer, 0, MAX_BUFFER_SIZE); 
         }
         // seek back to beginning of file
         fseek(fp, 0, SEEK_SET);
